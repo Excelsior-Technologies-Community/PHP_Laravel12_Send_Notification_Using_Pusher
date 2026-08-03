@@ -51,23 +51,27 @@ Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])
  */
 Route::middleware('auth')->group(function () {
 
-    /**
-     * Show all posts
-     * URL: /posts
-     * Method: GET
-     *
-     * This displays the posts list page.
-     */
     Route::get('/posts', [PostController::class, 'index'])
         ->name('posts.index');
 
-    /**
-     * Store a new post
-     * URL: /posts
-     * Method: POST
-     *
-     * When a post is created, an event is fired and broadcast to Pusher.
-     */
     Route::post('/posts', [PostController::class, 'store'])
         ->name('posts.store');
+
+    Route::get('/notifications', [App\Http\Controllers\NotificationController::class, 'index'])
+        ->name('notifications.index');
+
+    Route::post('/notifications/mark-read/{id}', [App\Http\Controllers\NotificationController::class, 'markAsRead'])
+        ->name('notifications.mark-read');
+
+    Route::post('/notifications/mark-unread/{id}', [App\Http\Controllers\NotificationController::class, 'markAsUnread'])
+        ->name('notifications.mark-unread');
+
+    Route::get('/notifications/unread-count', [App\Http\Controllers\NotificationController::class, 'unreadCount'])
+        ->name('notifications.unread-count');
+
+    Route::get('/send-notification', [App\Http\Controllers\NotificationController::class, 'sendForm'])
+        ->name('notifications.send-form');
+
+    Route::post('/send-notification', [App\Http\Controllers\NotificationController::class, 'send'])
+        ->name('notifications.send');
 });

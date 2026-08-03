@@ -75,20 +75,22 @@
 @endsection
 
 @section('script')
-{{-- Only ADMIN should receive realtime notifications --}}
-@if(auth()->check() && auth()->user()->is_admin)
 <script type="module">
-    window.Echo.channel('posts')
-        .listen('.create', (data) => {
-            console.log('New Post Event Received:', data);
-            document.getElementById('notification')
-                .insertAdjacentHTML(
-                    'beforeend', 
-                    `<div class="alert alert-success alert-dismissible fade show">
-                        <span><i class="fa fa-circle-check"></i> ${data.message}</span>
-                    </div>`
-                );
+    window.Echo.channel('notifications')
+        .listen('.received', (data) => {
+            if (data.notification.user_id === {{ auth()->id() }}) {
+                console.log('New Notification:', data);
+                const container = document.getElementById('notification');
+                if (container) {
+                    container.insertAdjacentHTML(
+                        'beforeend',
+                        `<div class="alert alert-success alert-dismissible fade show">
+                            <span><i class="fa fa-circle-check"></i> ${data.notification.data.message}</span>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>`
+                    );
+                }
+            }
         });
 </script>
-@endif
 @endsection
