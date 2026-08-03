@@ -12,6 +12,9 @@
         requests and Laravel forms.
     -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    @auth
+        <meta name="auth-user-id" content="{{ auth()->id() }}">
+    @endauth
 
     <!-- 
         Application Title
@@ -100,6 +103,29 @@
                                 <a class="nav-link" href="{{ route('posts.index') }}">{{ __('Posts') }}</a>
                             </li>
 
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ route('notifications.index') }}">{{ __('Notifications') }}</a>
+                            </li>
+
+                            <!-- Notification Bell Dropdown -->
+                            <li class="nav-item dropdown">
+                                <a id="notificationDropdown" class="nav-link dropdown-toggle position-relative" href="#" role="button"
+                                   data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" v-pre>
+                                    <i class="fa fa-bell"></i>
+                                    <span id="notification-badge" class="position-absolute top-10 start-100 translate-middle badge rounded-pill bg-danger d-none">
+                                        0
+                                    </span>
+                                </a>
+
+                                <div class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationDropdown" style="min-width: 320px; max-height: 400px; overflow-y: auto;">
+                                    <div id="notification-list">
+                                        <div class="px-3 py-2 text-muted small">Loading...</div>
+                                    </div>
+                                    <div class="dropdown-divider"></div>
+                                    <a class="dropdown-item text-center" href="{{ route('notifications.index') }}">View All Notifications</a>
+                                </div>
+                            </li>
+
                             <!-- User Dropdown Menu -->
                             <li class="nav-item dropdown">
                                 <a id="navbarDropdown" class="nav-link dropdown-toggle" href="#" role="button"
@@ -138,6 +164,9 @@
         <main class="py-4">
             @yield('content')
         </main>
+
+        <!-- Toast Container -->
+        <div id="toast-container" class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1055;"></div>
 
     </div>
 </body>
