@@ -53,6 +53,9 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/posts', [PostController::class, 'index'])
         ->name('posts.index');
+        
+    Route::get('/notifications/dropdown', [App\Http\Controllers\NotificationController::class, 'dropdown'])
+        ->name('notifications.dropdown');
 
     Route::post('/posts', [PostController::class, 'store'])
         ->name('posts.store');

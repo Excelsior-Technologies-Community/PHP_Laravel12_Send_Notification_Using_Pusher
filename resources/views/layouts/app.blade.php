@@ -108,23 +108,79 @@
                             </li>
 
                             <!-- Notification Bell Dropdown -->
-                            <li class="nav-item dropdown">
-                                <a id="notificationDropdown" class="nav-link dropdown-toggle position-relative" href="#" role="button"
-                                   data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" v-pre>
-                                    <i class="fa fa-bell"></i>
-                                    <span id="notification-badge" class="position-absolute top-10 start-100 translate-middle badge rounded-pill bg-danger d-none">
-                                        0
-                                    </span>
-                                </a>
+<li class="nav-item dropdown">
+    <a
+        id="notificationDropdown"
+        class="nav-link dropdown-toggle position-relative"
+        href="#"
+        role="button"
+        data-bs-toggle="dropdown"
+        aria-haspopup="true"
+        aria-expanded="false"
+    >
+        <i class="fa fa-bell"></i>
 
-                                <div class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationDropdown" style="min-width: 320px; max-height: 400px; overflow-y: auto;">
-                                    <div id="notification-list">
-                                        <div class="px-3 py-2 text-muted small">Loading...</div>
-                                    </div>
-                                    <div class="dropdown-divider"></div>
-                                    <a class="dropdown-item text-center" href="{{ route('notifications.index') }}">View All Notifications</a>
-                                </div>
-                            </li>
+        <span
+            id="notification-badge"
+            class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none"
+            style="font-size: 10px;"
+        >
+            0
+        </span>
+    </a>
+
+    <div
+        class="dropdown-menu dropdown-menu-end shadow"
+        aria-labelledby="notificationDropdown"
+        style="
+            min-width: 350px;
+            max-width: 400px;
+            max-height: 450px;
+            overflow-y: auto;
+        "
+    >
+
+<div
+    class="dropdown-header d-flex justify-content-between align-items-center"
+>
+    <strong>
+        <i class="fa fa-bell"></i>
+        Notifications
+    </strong>
+
+    <span
+        class="badge bg-primary"
+        id="notification-dropdown-count"
+    >
+        0 Unread
+    </span>
+</div>
+
+        <div class="dropdown-divider"></div>
+
+        <div id="notification-list">
+
+            <div
+                class="px-3 py-3 text-muted small text-center"
+                data-empty-notification
+            >
+                Loading notifications...
+            </div>
+
+        </div>
+
+        <div class="dropdown-divider"></div>
+
+        <a
+            class="dropdown-item text-center"
+            href="{{ route('notifications.index') }}"
+        >
+            <i class="fa fa-list"></i>
+            View All Notifications
+        </a>
+
+    </div>
+</li>
 
                             <!-- User Dropdown Menu -->
                             <li class="nav-item dropdown">
