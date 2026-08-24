@@ -12,25 +12,26 @@ class NotificationReceived implements ShouldBroadcastNow
 {
     use Dispatchable, SerializesModels;
 
-    public $notification;
+    public array $notification;
 
     public function __construct(Notification $notification)
     {
         $this->notification = [
-            'id' => $notification->id,
-            'type' => $notification->type,
-            'data' => $notification->data,
-            'read_at' => $notification->read_at,
+            'id'         => $notification->id,
+            'user_id'    => $notification->user_id,
+            'type'       => $notification->type,
+            'data'       => $notification->data,
+            'read_at'    => $notification->read_at,
             'created_at' => $notification->created_at->toDateTimeString(),
         ];
     }
 
-    public function broadcastOn()
+    public function broadcastOn(): Channel
     {
         return new Channel('notifications');
     }
 
-    public function broadcastAs()
+    public function broadcastAs(): string
     {
         return 'received';
     }
