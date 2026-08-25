@@ -16,19 +16,132 @@ class NotificationController extends Controller
 
     /**
      * Display notification history.
+     *
+     * New functionality:
+     * - Search notifications
+     * - Filter by type
+     * - Filter by read/unread status
+     * - Pagination
      */
-    public function index()
+    public function index(Request $request)
     {
-        $notifications = Notification::where(
-                'user_id',
-                auth()->id()
-            )
-            ->latest()
-            ->paginate(20);
+        $query = Notification::where(
+            'user_id',
+            auth()->id()
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Search
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->filled('search')) {
+
+            $search = $request->search;
+
+            $query->where(function ($q) use ($search) {
+
+                $q->where('type', 'like', "%{$search}%")
+                    ->orWhereJsonContains(
+                        'data->message',
+                        $search
+                    )
+                    ->orWhereJsonContains(
+                        'data->sender_name',
+                        $search
+                    );
+            });
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Filter By Type
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->filled('type')) {
+
+            $query->where(
+                'type',
+                $request->type
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Filter By Read / Unread
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->status === 'read') {
+
+            $query->whereNotNull('read_at');
+        } elseif ($request->status === 'unread') {
+
+            $query->whereNull('read_at');
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Pagination
+        |--------------------------------------------------------------------------
+        */
+
+        $notifications = $query
+            ->oldest()
+            ->paginate(5)
+            ->withQueryString();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Notification Statistics
+        |--------------------------------------------------------------------------
+        */
+
+        $totalNotifications = Notification::where(
+            'user_id',
+            auth()->id()
+        )->count();
+
+        $unreadNotifications = Notification::where(
+            'user_id',
+            auth()->id()
+        )
+            ->whereNull('read_at')
+            ->count();
+
+        $readNotifications = Notification::where(
+            'user_id',
+            auth()->id()
+        )
+            ->whereNotNull('read_at')
+            ->count();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Available Notification Types
+        |--------------------------------------------------------------------------
+        */
+
+        $notificationTypes = Notification::where(
+            'user_id',
+            auth()->id()
+        )
+            ->select('type')
+            ->distinct()
+            ->orderBy('type')
+            ->pluck('type');
 
         return view(
             'notifications.index',
-            compact('notifications')
+            compact(
+                'notifications',
+                'totalNotifications',
+                'unreadNotifications',
+                'readNotifications',
+                'notificationTypes'
+            )
         );
     }
 
@@ -38,43 +151,44 @@ class NotificationController extends Controller
     public function dropdown()
     {
         $notifications = Notification::where(
-                'user_id',
-                auth()->id()
-            )
-            ->latest()
-            ->take(10)
+            'user_id',
+            auth()->id()
+        )
+            ->oldest()
+            ->take(5)
             ->get();
 
         return response()->json(
             $notifications->map(function ($notification) {
+
                 return [
                     'id' => $notification->id,
 
                     'message' =>
-                        $notification->data['message']
+                    $notification->data['message']
                         ?? 'Notification',
 
                     'type' =>
-                        $notification->type,
+                    $notification->type,
 
                     'sender_name' =>
-                        $notification->data['sender_name']
+                    $notification->data['sender_name']
                         ?? 'System',
 
                     'post_id' =>
-                        $notification->data['post_id']
+                    $notification->data['post_id']
                         ?? null,
 
                     'read' =>
-                        !is_null($notification->read_at),
+                    !is_null($notification->read_at),
 
                     'created_at' =>
-                        $notification->created_at
-                            ->diffForHumans(),
+                    $notification->created_at
+                        ->diffForHumans(),
 
                     'created_at_full' =>
-                        $notification->created_at
-                            ->format('d M Y H:i:s'),
+                    $notification->created_at
+                        ->format('d M Y H:i:s'),
                 ];
             })
         );
@@ -86,13 +200,14 @@ class NotificationController extends Controller
     public function markAsRead($id)
     {
         $notification = Notification::where(
-                'user_id',
-                auth()->id()
-            )
+            'user_id',
+            auth()->id()
+        )
             ->where('id', $id)
             ->firstOrFail();
 
         if (is_null($notification->read_at)) {
+
             $notification->update([
                 'read_at' => now(),
             ]);
@@ -110,9 +225,9 @@ class NotificationController extends Controller
     public function markAsUnread($id)
     {
         $notification = Notification::where(
-                'user_id',
-                auth()->id()
-            )
+            'user_id',
+            auth()->id()
+        )
             ->where('id', $id)
             ->firstOrFail();
 
@@ -127,11 +242,74 @@ class NotificationController extends Controller
     }
 
     /**
+     * NEW FUNCTIONALITY 1
+     *
+     * Delete one notification.
+     */
+    public function destroy($id)
+    {
+        $notification = Notification::where(
+            'user_id',
+            auth()->id()
+        )
+            ->where('id', $id)
+            ->firstOrFail();
+
+        $notification->delete();
+
+        return back()->with(
+            'success',
+            'Notification deleted successfully.'
+        );
+    }
+
+    /**
+     * NEW FUNCTIONALITY 1
+     *
+     * Delete all notifications of current user.
+     */
+    public function destroyAll()
+    {
+        Notification::where(
+            'user_id',
+            auth()->id()
+        )->delete();
+
+        return back()->with(
+            'success',
+            'All notifications deleted successfully.'
+        );
+    }
+
+    /**
+     * NEW FUNCTIONALITY 2
+     *
+     * Mark all notifications as read.
+     */
+    public function markAllAsRead()
+    {
+        Notification::where(
+            'user_id',
+            auth()->id()
+        )
+            ->whereNull('read_at')
+            ->update([
+                'read_at' => now(),
+            ]);
+
+        return back()->with(
+            'success',
+            'All notifications marked as read.'
+        );
+    }
+
+    /**
      * Send notification.
      */
     public function send(Request $request)
     {
         $request->validate([
+
             'message' => [
                 'required',
                 'string',
@@ -146,16 +324,31 @@ class NotificationController extends Controller
 
         $targetUserId = $request->user_id;
 
+        /*
+        |--------------------------------------------------------------------------
+        | Send To All Users
+        |--------------------------------------------------------------------------
+        */
+
         if (!$targetUserId) {
+
             $users = User::all();
 
             foreach ($users as $user) {
+
                 $this->broadcastNotification(
                     $user->id,
                     $request->message
                 );
             }
         } else {
+
+            /*
+            |--------------------------------------------------------------------------
+            | Send To One User
+            |--------------------------------------------------------------------------
+            */
+
             $this->broadcastNotification(
                 $targetUserId,
                 $request->message
@@ -175,12 +368,15 @@ class NotificationController extends Controller
         int $userId,
         string $message
     ): void {
+
         $notification = Notification::create([
+
             'user_id' => $userId,
 
             'type' => 'broadcast',
 
             'data' => [
+
                 'message' => $message,
 
                 'sender_id' => auth()->id(),
@@ -200,9 +396,9 @@ class NotificationController extends Controller
     public function unreadCount()
     {
         $count = Notification::where(
-                'user_id',
-                auth()->id()
-            )
+            'user_id',
+            auth()->id()
+        )
             ->whereNull('read_at')
             ->count();
 
