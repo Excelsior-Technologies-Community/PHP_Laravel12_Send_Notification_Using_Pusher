@@ -12,10 +12,65 @@ class PostController extends Controller
 {
     /**
      * Display all posts.
+     *
+     * New functionality:
+     * - Search by title
+     * - Search by body
+     * - Search by user name
+     * - Pagination
      */
-    public function index()
+    public function index(Request $request)
     {
-        $posts = Post::latest()->get();
+        $query = Post::with('user');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Search Posts
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->filled('search')) {
+
+            $search = $request->search;
+
+            $query->where(function ($q) use ($search) {
+
+                $q->where(
+                    'title',
+                    'like',
+                    "%{$search}%"
+                )
+
+                    ->orWhere(
+                        'body',
+                        'like',
+                        "%{$search}%"
+                    )
+
+                    ->orWhereHas(
+                        'user',
+                        function ($userQuery) use ($search) {
+
+                            $userQuery->where(
+                                'name',
+                                'like',
+                                "%{$search}%"
+                            );
+                        }
+                    );
+            });
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Pagination
+        |--------------------------------------------------------------------------
+        */
+
+        $posts = $query
+            ->oldest()
+            ->paginate(5)
+            ->withQueryString();
 
         return view(
             'posts',
@@ -29,6 +84,7 @@ class PostController extends Controller
     public function store(Request $request)
     {
         $request->validate([
+
             'title' => [
                 'required',
                 'string',
@@ -48,12 +104,14 @@ class PostController extends Controller
         */
 
         $post = Post::create([
+
             'user_id' => auth()->id(),
 
             'title' => $request->title,
 
             'body' => $request->body,
         ]);
+
 
         /*
         |--------------------------------------------------------------------------
@@ -66,6 +124,7 @@ class PostController extends Controller
             1
         )->get();
 
+
         /*
         |--------------------------------------------------------------------------
         | Create Notification For Each Admin
@@ -75,23 +134,30 @@ class PostController extends Controller
         foreach ($admins as $admin) {
 
             $notification = Notification::create([
+
                 'user_id' => $admin->id,
 
                 'type' => 'post',
 
                 'data' => [
+
                     'message' =>
-                        "New post created: {$post->title}",
+                    "New post created: {$post->title}",
 
-                    'post_id' => $post->id,
+                    'post_id' =>
+                    $post->id,
 
-                    'post_title' => $post->title,
+                    'post_title' =>
+                    $post->title,
 
-                    'sender_id' => auth()->id(),
+                    'sender_id' =>
+                    auth()->id(),
 
-                    'sender_name' => auth()->user()->name,
+                    'sender_name' =>
+                    auth()->user()->name,
                 ],
             ]);
+
 
             /*
             |--------------------------------------------------------------------------
@@ -100,9 +166,12 @@ class PostController extends Controller
             */
 
             broadcast(
-                new NotificationReceived($notification)
+                new NotificationReceived(
+                    $notification
+                )
             );
         }
+
 
         return back()->with(
             'success',
